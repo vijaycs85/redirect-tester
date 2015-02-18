@@ -57,7 +57,7 @@ function visit_url($curl, $url, $proxy = FALSE) {
     $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
     if ($status === HTTP_STATUS_MOVED_PERMANENTLY || $status === HTTP_STATUS_FOUND) {
-      preg_match("@https?://([-\w\.]+)+(:\d+)?(/([\w/_\-\.]*(\?\S+)?)?)?@", $response, $matches);
+      preg_match('/\b(?:(?:https?|http):\/\/|www\.)[-a-z0-9+&@#\/%?=~_|!:,.;]*[-a-z0-9+&@#\/%=~_|]/i', $response, $matches);
       $result['target'] = $matches[0];
     }
   }
@@ -74,8 +74,11 @@ function visit_url($curl, $url, $proxy = FALSE) {
  */
 function set_environment_url($url, $environment = NULL) {
   // @TODO: replace domains as form input.
-  if (strpos($url, 'www.royalmail') !== FALSE) {
-    $url = str_replace('www.royalmail', "www$environment.royalmail", $url);
+  if (strpos($url, 'www.royalmail.com') !== FALSE) {
+    $url = str_replace('www.royalmail.com', "www$environment.royalmail.com", $url);
+  }
+  if (strpos($url, 'www.royalmailgroup.com') !== FALSE) {
+    $url = str_replace('www.royalmailgroup.com', "www$environment.royalmailgroup.com", $url);
   }
   return $url;
 }
@@ -126,8 +129,8 @@ else {
   $environment = $_POST['env'];
   $curl = setup_curl($proxy);
   while ($row = fgetcsv($file)) {
-    $original_url = set_environment_url($row[0], $environment);
-    $expected_url = set_environment_url($row[1], $environment);
+    $original_url = set_environment_url(trim($row[0]), $environment);
+    $expected_url = set_environment_url(trim($row[1]), $environment);
 
     $parsed_original = parse_url($original_url);
     $parsed_expected = parse_url($expected_url);
@@ -135,7 +138,6 @@ else {
     // Is there a URL to check?
     if (array_key_exists('scheme', $parsed_original)) {
       $visit = visit_url($curl, $original_url, $proxy);
-
       $actual_url = '';
 
       $result = array(
